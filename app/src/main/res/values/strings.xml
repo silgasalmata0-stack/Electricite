@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Electricite</string>
+
+    <string name="navigation_drawer_open">Ouvrir</string>
+    <string name="navigation_drawer_close">Fermer</string>
+
+    <string name="menu_home">Accueil</string>
+    <string name="menu_reports">Signalements</string>
+</resources>

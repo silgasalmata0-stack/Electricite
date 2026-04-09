@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:gravity="center_horizontal"
+    android:background="#F4F7FA">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:text="Connexion"
+        android:textColor="#1A237E"
+        android:textSize="34sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="50dp"
+        android:text="Compléter ces informations pour accéder à votre espace"
+        android:textAlignment="center"
+        android:textColor="#757575"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/editEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="silgasalmata0@gmail.com"
+        android:inputType="textEmailAddress"
+        android:background="@null"
+        android:paddingVertical="12dp"
+        android:textColor="#000000" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#1A237E"
+        android:layout_marginBottom="24dp"/>
+
+    <EditText
+        android:id="@+id/editPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="......"
+        android:inputType="textPassword"
+        android:background="@null"
+        android:paddingVertical="12dp"
+        android:textColor="#000000" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#1A237E"
+        android:layout_marginBottom="40dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSeConnecter"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Se connecter"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        app:cornerRadius="30dp"
+        app:backgroundTint="#1A237E"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCreerCompte"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Créer un compte"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        app:cornerRadius="30dp"
+        app:backgroundTint="#FF9800" />
+
+</LinearLayout>
