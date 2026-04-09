@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "543975634198",
+    "firebase_url": "https://electricite-15019-default-rtdb.firebaseio.com",
+    "project_id": "electricite-15019",
+    "storage_bucket": "electricite-15019.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543975634198:android:e6ae6ab1c16129d2bc0c37",
+        "android_client_info": {
+          "package_name": "com.example.Electricite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWtVD-2D3ue-pVu8qym3kHgR6Ziz98yZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543975634198:android:055f0dede949c2b3bc0c37",
+        "android_client_info": {
+          "package_name": "com.example.electricite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWtVD-2D3ue-pVu8qym3kHgR6Ziz98yZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
