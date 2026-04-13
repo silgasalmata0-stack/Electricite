@@ -4,11 +4,11 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -20,8 +20,11 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,6 +41,7 @@ public class FormulaireActivity extends AppCompatActivity {
     private RadioGroup radioGroupStatus;
     private MaterialButton btnEnvoyer;
     private DatabaseReference database;
+    private DatabaseReference usersRef; // Ajouté pour le score de confiance
     private String keyModif = null;
     private FusedLocationProviderClient fusedLocationClient;
 
@@ -49,6 +53,7 @@ public class FormulaireActivity extends AppCompatActivity {
         setContentView(R.layout.activity_formulaire);
 
         database = FirebaseDatabase.getInstance().getReference("Signalements");
+        usersRef = FirebaseDatabase.getInstance().getReference("Users"); // Initialisation
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         editZone = findViewById(R.id.editZone);
@@ -67,16 +72,50 @@ public class FormulaireActivity extends AppCompatActivity {
             btnEnvoyer.setText("Mettre à jour");
         }
 
-        btnEnvoyer.setOnClickListener(v -> verifierPermissionsEtLocaliser());
+        btnEnvoyer.setOnClickListener(v -> verifierScoreEtPermissions());
     }
 
-    private void verifierPermissionsEtLocaliser() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 101);
+    private void verifierScoreEtPermissions() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) {
+            Toast.makeText(this, "Utilisateur non connecté", Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnEnvoyer.setEnabled(false);
+
+        // 1. Vérification du Score de Confiance avant tout
+        usersRef.child(uid).child("scoreConfiance").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Si le score n'existe pas encore, on considère qu'il est de 100 par défaut
+                int score = snapshot.exists() ? snapshot.getValue(Integer.class) : 100;
+
+                if (score <= 0) {
+                    Toast.makeText(FormulaireActivity.this,
+                            "❌ Votre compte est suspendu pour signalements abusifs.",
+                            Toast.LENGTH_LONG).show();
+                    btnEnvoyer.setEnabled(true);
+                } else {
+                    // 2. Si le score est bon, on vérifie les permissions GPS
+                    continuerVersLocalisation();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                btnEnvoyer.setEnabled(true);
+            }
+        });
+    }
+
+    private void continuerVersLocalisation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 101);
+            btnEnvoyer.setEnabled(true);
+            return;
+        }
+
         fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
             double lat = (location != null) ? location.getLatitude() : 0.0;
             double lng = (location != null) ? location.getLongitude() : 0.0;
@@ -100,19 +139,53 @@ public class FormulaireActivity extends AppCompatActivity {
         }
         String typeSaisi = selectedRadio.getText().toString();
 
-        // 1. RÉCUPÉRATION DATE ET HEURE (CORRIGÉ)
+        if ("Retour".equalsIgnoreCase(typeSaisi)) {
+            database.orderByChild("zone").equalTo(zoneSaisie).limitToLast(1)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            boolean peutSignalerRetour = false;
+                            if (snapshot.exists()) {
+                                for (DataSnapshot d : snapshot.getChildren()) {
+                                    Signalement dernier = d.getValue(Signalement.class);
+                                    if (dernier != null && "Coupure".equalsIgnoreCase(dernier.getType())) {
+                                        peutSignalerRetour = true;
+                                    }
+                                }
+                            }
+
+                            if (peutSignalerRetour) {
+                                enregistrerVraiSignalement(zoneSaisie, typeSaisi, lat, lng);
+                            } else {
+                                Toast.makeText(FormulaireActivity.this,
+                                        "Action impossible : Aucune coupure n'est active dans cette zone !",
+                                        Toast.LENGTH_LONG).show();
+                                btnEnvoyer.setEnabled(true);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            btnEnvoyer.setEnabled(true);
+                        }
+                    });
+        } else {
+            enregistrerVraiSignalement(zoneSaisie, typeSaisi, lat, lng);
+        }
+    }
+
+    private void enregistrerVraiSignalement(String zoneSaisie, String typeSaisi, double lat, double lng) {
         Calendar calendar = Calendar.getInstance();
         String dateActuelle = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.getTime());
         String heureActuelle = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(calendar.getTime());
-        String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
+        String currentUserId = FirebaseAuth.getInstance().getUid() != null ? FirebaseAuth.getInstance().getUid() : "";
 
-        // 2. PRÉPARATION DES DONNÉES (CORRIGÉ AVEC USERID POUR LE CRAYON)
         Map<String, Object> data = new HashMap<>();
         data.put("zone", zoneSaisie);
         data.put("type", typeSaisi);
         data.put("date", dateActuelle);
         data.put("heure", heureActuelle);
-        data.put("userId", currentUserId); // Très important pour afficher le crayon de modification
+        data.put("userId", currentUserId);
         data.put("timestamp", System.currentTimeMillis());
         data.put("latitude", lat);
         data.put("longitude", lng);
@@ -121,7 +194,6 @@ public class FormulaireActivity extends AppCompatActivity {
 
         ref.setValue(data).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                // On envoie l'ID de l'envoyeur pour éviter la notif sur son propre tel
                 declencherNotificationFCM(zoneSaisie, typeSaisi, currentUserId);
                 Toast.makeText(this, "Signalement enregistré !", Toast.LENGTH_SHORT).show();
                 finish();
@@ -140,7 +212,7 @@ public class FormulaireActivity extends AppCompatActivity {
             JSONObject dataBundle = new JSONObject();
             dataBundle.put("title", "⚠️ Alerte Électricité");
             dataBundle.put("message", type + " à " + zone);
-            dataBundle.put("senderId", senderId); // On envoie l'ID de celui qui signale
+            dataBundle.put("senderId", senderId);
 
             mainPayload.put("data", dataBundle);
 

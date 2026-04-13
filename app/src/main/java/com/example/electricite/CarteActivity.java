@@ -1,10 +1,12 @@
 package com.example.electricite;
 
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -35,7 +37,6 @@ public class CarteActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // CONFIGURATION CRUCIALE : Identification de l'application
         Configuration.getInstance().setUserAgentValue(getPackageName());
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
 
@@ -77,37 +78,49 @@ public class CarteActivity extends AppCompatActivity {
     }
 
     private void ajouterMarqueurDepuisNomQuartier(Signalement s) {
-        // Fil secondaire pour éviter le crash "Application bloquée"
         new Thread(() -> {
             try {
-                // Recherche précise avec Ville et Pays
-                List<Address> addresses = geocoder.getFromLocationName(s.getZone() + ", Ouagadougou, Burkina Faso", 1);
+                // SOLUTION PRÉCISION : On concatène strictement pour le Geocoder
+                String adresseCherchee = s.getZone() + ", Ouagadougou, Burkina Faso";
+                List<Address> addresses = geocoder.getFromLocationName(adresseCherchee, 1);
 
                 if (addresses != null && !addresses.isEmpty()) {
                     double lat = addresses.get(0).getLatitude();
                     double lon = addresses.get(0).getLongitude();
 
-                    // Retour sur le fil principal pour l'affichage
                     runOnUiThread(() -> {
                         Marker marker = new Marker(map);
                         marker.setPosition(new GeoPoint(lat, lon));
-                        marker.setTitle(s.getZone());
-                        marker.setSnippet(s.getType() + " à " + s.getHeure());
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        marker.setTitle("Secteur : " + s.getZone());
 
-                        // Icône par défaut colorée
-                        marker.setIcon(getResources().getDrawable(org.osmdroid.library.R.drawable.marker_default));
+                        // SOLUTION COULEURS : Utilisation de .mutate() pour isoler chaque icône
+                        Drawable iconeStylee = getResources()
+                                .getDrawable(org.osmdroid.library.R.drawable.marker_default)
+                                .mutate();
+
                         if ("Coupure".equalsIgnoreCase(s.getType())) {
-                            marker.getIcon().setTint(Color.RED);
+                            marker.setSnippet("⚠️ État : Coupure de courant\nLe " + s.getDate() + " à " + s.getHeure());
+                            iconeStylee.setTint(Color.RED);
                         } else {
-                            marker.getIcon().setTint(Color.GREEN);
+                            marker.setSnippet("✅ État : Courant rétabli\nLe " + s.getDate() + " à " + s.getHeure());
+                            iconeStylee.setTint(Color.parseColor("#2E7D32")); // Vert foncé pro
                         }
+
+                        marker.setIcon(iconeStylee);
+
+                        // Gestion du clic pour afficher les détails
+                        marker.setOnMarkerClickListener((m, mapView) -> {
+                            m.showInfoWindow();
+                            return true;
+                        });
 
                         map.getOverlays().add(marker);
                         map.invalidate();
                     });
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.e("GEO_ERROR", "Erreur Geocoding pour " + s.getZone(), e);
             }
         }).start();
     }

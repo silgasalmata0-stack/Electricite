@@ -10,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Statistiques des Coupures"
+        android:text="Statistiques du Réseau"
         android:textColor="#333333"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -19,11 +19,13 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tvSousTitre"
+        android:id="@+id/tvTotalCompteur"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Nombre d'incidents par jour"
-        android:textColor="#666666"
+        android:layout_marginTop="8dp"
+        android:text="Chargement des données..."
+        android:textColor="#FF5722"
+        android:textStyle="italic"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitreStats" />
@@ -33,10 +35,12 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toTopOf="@+id/btnRetour"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvSousTitre" />
+        app:layout_constraintTop_toBottomOf="@id/tvTotalCompteur" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnRetour"

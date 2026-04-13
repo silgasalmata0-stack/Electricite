@@ -2,6 +2,7 @@ package com.example.electricite;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.widget.TextView; // Import indispensable ajouté
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -32,6 +33,7 @@ public class StatsActivity extends AppCompatActivity {
     private BarChart barChart;
     private DatabaseReference database;
     private MaterialButton btnRetour;
+    private TextView tvTotalCompteur;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +42,8 @@ public class StatsActivity extends AppCompatActivity {
 
         barChart = findViewById(R.id.barChart);
         btnRetour = findViewById(R.id.btnRetour);
+        tvTotalCompteur = findViewById(R.id.tvTotalCompteur);
+
         database = FirebaseDatabase.getInstance().getReference("Signalements");
 
         btnRetour.setOnClickListener(v -> finish());
@@ -54,6 +58,7 @@ public class StatsActivity extends AppCompatActivity {
                 Map<String, Integer> coupuresParDate = new TreeMap<>();
                 Map<String, Integer> retoursParDate = new TreeMap<>();
                 TreeSet<String> toutesLesDates = new TreeSet<>();
+                int totalGlobal = 0;
 
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Signalement s = data.getValue(Signalement.class);
@@ -63,10 +68,15 @@ public class StatsActivity extends AppCompatActivity {
 
                         if ("Coupure".equalsIgnoreCase(s.getType())) {
                             coupuresParDate.put(date, coupuresParDate.getOrDefault(date, 0) + 1);
+                            totalGlobal++;
                         } else if ("Retour".equalsIgnoreCase(s.getType())) {
                             retoursParDate.put(date, retoursParDate.getOrDefault(date, 0) + 1);
                         }
                     }
+                }
+
+                if (tvTotalCompteur != null) {
+                    tvTotalCompteur.setText(totalGlobal + " coupures signalées au total");
                 }
 
                 if (toutesLesDates.isEmpty()) {
@@ -95,11 +105,11 @@ public class StatsActivity extends AppCompatActivity {
         }
 
         BarDataSet setCoupure = new BarDataSet(entriesCoupures, "Coupures");
-        setCoupure.setColor(Color.parseColor("#FF5722")); // Orange
+        setCoupure.setColor(Color.parseColor("#FF5722"));
         setCoupure.setValueTextColor(Color.BLACK);
 
         BarDataSet setRetour = new BarDataSet(entriesRetours, "Retours");
-        setRetour.setColor(Color.parseColor("#4CAF50")); // Vert
+        setRetour.setColor(Color.parseColor("#4CAF50"));
         setRetour.setValueTextColor(Color.BLACK);
 
         BarData data = new BarData(setCoupure, setRetour);
@@ -111,7 +121,6 @@ public class StatsActivity extends AppCompatActivity {
             }
         });
 
-        // Config technique pour le groupement
         float groupSpace = 0.08f;
         float barSpace = 0.03f;
         float barWidth = 0.43f;

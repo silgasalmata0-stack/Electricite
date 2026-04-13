@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
@@ -85,11 +86,12 @@ public class SignalementAdapter extends RecyclerView.Adapter<SignalementAdapter.
             }
         }
 
-        // --- GESTION DES ACTIONS (UNIQUEMENT POUR L'AUTEUR) ---
+        // --- GESTION DES ACTIONS (SÉCURITÉ ET MODÉRATION) ---
         if (monUid != null && monUid.equals(s.getUserId())) {
+            // C'est mon signalement
             holder.imgEdit.setVisibility(View.VISIBLE);
+            holder.imgSignalerFaux.setVisibility(View.GONE); // On ne peut pas se signaler soi-même
 
-            // Clic sur le crayon pour modifier
             holder.imgEdit.setOnClickListener(v -> {
                 Intent i = new Intent(v.getContext(), FormulaireActivity.class);
                 i.putExtra("KEY_MODIF", s.getKey());
@@ -98,16 +100,22 @@ public class SignalementAdapter extends RecyclerView.Adapter<SignalementAdapter.
                 v.getContext().startActivity(i);
             });
 
-            // Clic long sur la carte pour supprimer
             holder.itemView.setOnLongClickListener(v -> {
                 confirmerSuppression(v.getContext(), s.getKey());
                 return true;
             });
 
         } else {
-            // On cache les options si ce n'est pas nous
+            // C'est le signalement de quelqu'un d'autre
             holder.imgEdit.setVisibility(View.GONE);
+            holder.imgSignalerFaux.setVisibility(View.VISIBLE);
             holder.itemView.setOnLongClickListener(null);
+
+            holder.imgSignalerFaux.setOnClickListener(v -> {
+                // Pour la démo : baisse fictive du score ou message
+                Toast.makeText(v.getContext(), "Merci, ce signalement sera vérifié par la communauté", Toast.LENGTH_SHORT).show();
+                // Ici, tu pourrais ajouter la logique Firebase pour décrémenter le score de s.getUserId()
+            });
         }
     }
 
@@ -132,7 +140,7 @@ public class SignalementAdapter extends RecyclerView.Adapter<SignalementAdapter.
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView txtZone, txtType, txtDateTime;
-        ImageView imgEdit;
+        ImageView imgEdit, imgSignalerFaux;
 
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -140,6 +148,7 @@ public class SignalementAdapter extends RecyclerView.Adapter<SignalementAdapter.
             txtType = itemView.findViewById(R.id.txtType);
             txtDateTime = itemView.findViewById(R.id.txtDateTime);
             imgEdit = itemView.findViewById(R.id.imgEdit);
+            imgSignalerFaux = itemView.findViewById(R.id.imgSignalerFaux); // Initialisation indispensable
         }
     }
 }

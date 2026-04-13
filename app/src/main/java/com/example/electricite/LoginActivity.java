@@ -8,11 +8,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase; // Import manquant
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
     private EditText editEmail, editPassword;
     private Button btnSeConnecter, btnCreerCompte;
 
@@ -21,24 +23,22 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // --- NOUVEAU : MODE HORS-LIGNE ---
-        // On l'entoure d'un try-catch pour éviter les crashs au redémarrage
+        // --- MODE HORS-LIGNE ---
         try {
             FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-            FirebaseDatabase.getInstance().getReference("Signalements").keepSynced(true);
         } catch (Exception e) {
-            // Déjà activé ou erreur mineure
+            // Déjà activé
         }
 
         mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
 
-        // --- 1. LIAISON ---
         editEmail = findViewById(R.id.editEmail);
         editPassword = findViewById(R.id.editPassword);
         btnSeConnecter = findViewById(R.id.btnSeConnecter);
         btnCreerCompte = findViewById(R.id.btnCreerCompte);
 
-        // --- 2. ACTION : SE CONNECTER ---
+        // --- ACTION : SE CONNECTER ---
         btnSeConnecter.setOnClickListener(v -> {
             String email = editEmail.getText().toString().trim();
             String password = editPassword.getText().toString().trim();
@@ -59,7 +59,7 @@ public class LoginActivity extends AppCompatActivity {
                     });
         });
 
-        // --- 3. ACTION : CRÉER UN COMPTE ---
+        // --- ACTION : CRÉER UN COMPTE (ADAPTÉ AU PROFIL) ---
         btnCreerCompte.setOnClickListener(v -> {
             String email = editEmail.getText().toString().trim();
             String password = editPassword.getText().toString().trim();
@@ -72,10 +72,27 @@ public class LoginActivity extends AppCompatActivity {
             mAuth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this, task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Compte créé !", Toast.LENGTH_SHORT).show();
-                            allerAuDashboard();
+                            // 1. Récupérer l'ID unique de l'utilisateur
+                            String userId = mAuth.getCurrentUser().getUid();
+
+                            // 2. Créer un nom par défaut (partie avant le @ de l'email)
+                            String nomParDefaut = email.split("@")[0];
+
+                            // 3. Créer l'objet User (via ta classe User.java)
+                            User nouveauProfil = new User(userId, nomParDefaut, "Non renseigné");
+
+                            // 4. Enregistrer dans le dossier "Users"
+                            mDatabase.child("Users").child(userId).setValue(nouveauProfil)
+                                    .addOnCompleteListener(taskDb -> {
+                                        if (taskDb.isSuccessful()) {
+                                            Toast.makeText(this, "Compte et Profil créés !", Toast.LENGTH_SHORT).show();
+                                            allerAuDashboard();
+                                        } else {
+                                            Toast.makeText(this, "Erreur Database : " + taskDb.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
                         } else {
-                            Toast.makeText(this, "Erreur : " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Erreur Auth : " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
         });

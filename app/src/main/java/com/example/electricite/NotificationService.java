@@ -8,11 +8,30 @@ import android.content.Intent;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 
-public class NotificationService {
+// INDISPENSABLE : Importations pour transformer la classe en Service
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 
-    // On change l'ID du canal pour forcer une mise à jour système
+public class NotificationService extends FirebaseMessagingService {
+
     private static final String CHANNEL_ID = "alerte_electricite_v2";
 
+    // Cette méthode est appelée automatiquement quand une notification arrive via Firebase
+    @Override
+    public void onMessageReceived(RemoteMessage remoteMessage) {
+        super.onMessageReceived(remoteMessage);
+
+        // On vérifie si le message contient une notification
+        if (remoteMessage.getNotification() != null) {
+            String titre = remoteMessage.getNotification().getTitle();
+            String message = remoteMessage.getNotification().getBody();
+
+            // On appelle ta méthode pour l'afficher sur le téléphone
+            envoyerNotification(this, titre, message);
+        }
+    }
+
+    // Ta méthode existante (maintenue en 'static' pour pouvoir l'appeler aussi manuellement)
     public static void envoyerNotification(Context context, String titre, String message) {
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -37,18 +56,18 @@ public class NotificationService {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // 3. Construction de la notification (Syntaxe corrigée)
+        // 3. Construction de la notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert) // Icône plus standard pour le test
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setContentTitle(titre)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setDefaults(NotificationCompat.DEFAULT_ALL) // Son + Vibration
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
 
-        // 4. Envoi avec un ID unique pour éviter que les notifs s'écrasent
+        // 4. Envoi
         if (notificationManager != null) {
             notificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }

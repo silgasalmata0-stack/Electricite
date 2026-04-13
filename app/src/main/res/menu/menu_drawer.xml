@@ -27,6 +27,11 @@
         android:icon="@android:drawable/ic_dialog_map"/>
 
     <item
+        android:id="@+id/nav_profil"
+        android:title="Mon Profil"
+        android:icon="@android:drawable/ic_menu_edit"/>
+
+    <item
         android:id="@+id/nav_about"
         android:title="A propos"
         android:icon="@android:drawable/ic_menu_info_details"/>
