@@ -80,9 +80,9 @@ public class CarteActivity extends AppCompatActivity {
     private void ajouterMarqueurDepuisNomQuartier(Signalement s) {
         new Thread(() -> {
             try {
-                // SOLUTION PRÉCISION : On concatène strictement pour le Geocoder
-                String adresseCherchee = s.getZone() + ", Ouagadougou, Burkina Faso";
-                List<Address> addresses = geocoder.getFromLocationName(adresseCherchee, 1);
+                // RE-AJOUTÉ : Recherche de l'adresse précise
+                String zoneRecherche = s.getZone() + ", Ouagadougou, Burkina Faso";
+                List<Address> addresses = geocoder.getFromLocationName(zoneRecherche, 1);
 
                 if (addresses != null && !addresses.isEmpty()) {
                     double lat = addresses.get(0).getLatitude();
@@ -92,35 +92,28 @@ public class CarteActivity extends AppCompatActivity {
                         Marker marker = new Marker(map);
                         marker.setPosition(new GeoPoint(lat, lon));
                         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                        marker.setTitle("Secteur : " + s.getZone());
+                        marker.setTitle("Zone : " + s.getZone());
 
-                        // SOLUTION COULEURS : Utilisation de .mutate() pour isoler chaque icône
-                        Drawable iconeStylee = getResources()
+                        // RE-AJOUTÉ : Gestion de l'icône et des couleurs
+                        Drawable iconeUnique = getResources()
                                 .getDrawable(org.osmdroid.library.R.drawable.marker_default)
                                 .mutate();
 
                         if ("Coupure".equalsIgnoreCase(s.getType())) {
-                            marker.setSnippet("⚠️ État : Coupure de courant\nLe " + s.getDate() + " à " + s.getHeure());
-                            iconeStylee.setTint(Color.RED);
+                            marker.setSnippet("Statut : Coupure");
+                            iconeUnique.setTint(Color.RED);
                         } else {
-                            marker.setSnippet("✅ État : Courant rétabli\nLe " + s.getDate() + " à " + s.getHeure());
-                            iconeStylee.setTint(Color.parseColor("#2E7D32")); // Vert foncé pro
+                            marker.setSnippet("Statut : Rétabli");
+                            iconeUnique.setTint(Color.parseColor("#2E7D32"));
                         }
 
-                        marker.setIcon(iconeStylee);
-
-                        // Gestion du clic pour afficher les détails
-                        marker.setOnMarkerClickListener((m, mapView) -> {
-                            m.showInfoWindow();
-                            return true;
-                        });
-
+                        marker.setIcon(iconeUnique);
                         map.getOverlays().add(marker);
                         map.invalidate();
                     });
                 }
             } catch (IOException e) {
-                Log.e("GEO_ERROR", "Erreur Geocoding pour " + s.getZone(), e);
+                Log.e("GEO_ERR", "Erreur pour : " + s.getZone());
             }
         }).start();
     }

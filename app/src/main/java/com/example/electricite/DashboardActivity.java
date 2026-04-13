@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,14 +45,12 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
 
         applicationStartTime = System.currentTimeMillis() - 5000;
 
-        // Permissions notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
 
-        // Configuration Toolbar et Drawer
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         drawer = findViewById(R.id.drawer_layout);
@@ -64,39 +61,13 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        // --- GESTION DU HEADER DU MENU LATÉRAL ---
-        // On récupère la vue mais on n'appelle plus navNom/navEmail car ils sont supprimés du XML
-        View headerView = navigationView.getHeaderView(0);
-
         welcomeText = findViewById(R.id.welcomeText);
         txtStatutReseau = findViewById(R.id.txtStatutReseau);
         txtSecteursCritiques = findViewById(R.id.txtSecteursCritiques);
 
-
-        // Message de bienvenue dynamique sur l'écran d'accueil (Dashboard)
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-            FirebaseDatabase.getInstance().getReference("Users").child(uid)
-                    .addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            User user = snapshot.getValue(User.class);
-                            if (user != null && user.nom != null) {
-                                // Ici on concatène "Bienvenue " avec le nom de l'utilisateur
-                                welcomeText.setText("Bienvenue " + user.nom);
-                            } else {
-                                welcomeText.setText("Bienvenue");
-                            }
-                        }
-                        @Override public void onCancelled(@NonNull DatabaseError error) {}
-                    });
-        }
-
         database = FirebaseDatabase.getInstance().getReference("Signalements");
         monitorerReseau();
 
-        // Écouteur pour les nouvelles notifications
         database.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, String previousChildName) {
@@ -120,7 +91,6 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // Boutons et Cards
         btnActionSignaler = findViewById(R.id.btnActionSignaler);
         btnActionSignaler.setOnClickListener(v -> startActivity(new Intent(this, FormulaireActivity.class)));
 
@@ -129,7 +99,6 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         cardRecents.setOnClickListener(v -> ouvrirListe("RECENTS"));
         cardZones.setOnClickListener(v -> ouvrirListe("ZONES_CRITIQUES"));
 
-        // Gestion du bouton retour
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -174,19 +143,9 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
 
         if (id == R.id.nav_signalements) {
             ouvrirListe("RECENTS");
-        } else if (id == R.id.nav_history) {
             ouvrirListe("MON_HISTORIQUE");
-        } else if (id == R.id.nav_stats) {
             startActivity(new Intent(this, StatsActivity.class));
-        } else if (id == R.id.nav_carte) {
             startActivity(new Intent(this, CarteActivity.class));
-        } else if (id == R.id.nav_profil) {
-            startActivity(new Intent(this, ProfilActivity.class));
-        } else if (id == R.id.nav_about) {
-            // --- MODIFICATION ICI : On remplace l'AlertDialog par l'activité pro ---
-            Intent intent = new Intent(DashboardActivity.this, AboutActivity.class);
-            startActivity(intent);
-        } else if (id == R.id.nav_logout) {
             FirebaseAuth.getInstance().signOut();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
